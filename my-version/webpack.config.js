@@ -1,5 +1,5 @@
 const webpack = require('webpack');
-
+const vtkRules = require('vtk.js/Utilities/config/dependency.js').webpack.core.rules
 
 module.exports = {
     entry: [ './src/index.js' ],
