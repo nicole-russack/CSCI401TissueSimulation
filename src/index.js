@@ -71,6 +71,12 @@ function createViewer(rootContainer, fileContents, options) {
   renderWindow.getInteractor().setDesiredUpdateRate(30);
 
   const vtiReader = vtkXMLImageDataReader.newInstance();
+
+  //take in a list of files and only display the one i want it to 
+
+
+
+
   vtiReader.parseAsArrayBuffer(fileContents);
 
   const source = vtiReader.getOutputData(0);
@@ -187,8 +193,28 @@ function createViewer(rootContainer, fileContents, options) {
 export function load(container, options) {
   autoInit = false;
   emptyContainer(container);
+  
+
+
+
 
   if (options.file) {
+
+    console.log(options)
+    console.log(options.file.size)
+    console.log(options.file[0])
+
+  //   console.log(options.ext)
+  //   console.log("Hi")
+  //   console.log(options)
+    
+  //   if ( typeof options.open == "undefined" ){
+  //     console.log("is a folder")
+  //   }
+
+  //   options.forEach(element => console.log(element));
+
+
     if (options.ext === 'vti') {
       const reader = new FileReader();
       reader.onload = function onLoad(e) {
@@ -236,17 +262,53 @@ export function initLocalFileLoader(container) {
 
   const fileInput = fileContainer.querySelector('input');
 
+  console.log("file input", fileInput)
+
+  var i = -1;                  //  set your counter to 1
+
+  function myLoop(files) {         //  create a loop function
+    setTimeout(function() {   //  call a 3s setTimeout when the loop is called
+      i++;                    //  increment the counter
+      if (i < files.length) {           //  if the counter < 10, call the loop function
+        const ext = files[i].name.split('.').slice(-1)[0];
+        const options = { file: files[i], ext, ...userParams };
+        load(myContainer, options);
+        myLoop(files);             //  ..  again which will trigger another 
+      }                       //  ..  setTimeout()
+    }, 1000)
+  }
+  
+                    //  start the loop
+  
+
   function handleFile(e) {
     preventDefaults(e);
     const dataTransfer = e.dataTransfer;
     const files = e.target.files || dataTransfer.files;
-    if (files.length === 1) {
-      myContainer.removeChild(fileContainer);
-      const ext = files[0].name.split('.').slice(-1)[0];
-      const options = { file: files[0], ext, ...userParams };
-      load(myContainer, options);
+    console.log("file length: " + files.length);
+    for (var i = 0; i < files.length; ++i) {
+      myLoop(files);
+      // console.log("file: " + i);
+      // //myContainer.removeChild(fileContainer);
+      // const ext = files[2].name.split('.').slice(-1)[0];
+      // const options = { file: files[2], ext, ...userParams };
+      // load(myContainer, options);
     }
   }
+
+  // function handleFile(e) {
+  //   preventDefaults(e);
+  //   const dataTransfer = e.dataTransfer;
+  //   const files = e.target.files || dataTransfer.files;
+  //   console.log("file length: " + files.length);
+  //   for (var i = 0; i < 1; ++i) {
+  //     console.log("file: " + i);
+  //     myContainer.removeChild(fileContainer);
+  //     const ext = files[2].name.split('.').slice(-1)[0];
+  //     const options = { file: files[2], ext, ...userParams };
+  //     load(myContainer, options);
+  //   }
+  // }
 
   fileInput.addEventListener('change', handleFile);
   fileContainer.addEventListener('drop', handleFile);
