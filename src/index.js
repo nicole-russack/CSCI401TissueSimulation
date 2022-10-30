@@ -2,6 +2,8 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 import '@kitware/vtk.js/favicon';
+import vtkOpenGLRenderWindow from '@kitware/vtk.js/Rendering/OpenGL/RenderWindow';
+
 
 // Load the rendering pieces we want to use (for both WebGL and WebGPU)
 import '@kitware/vtk.js/Rendering/Profiles/Volume';
@@ -18,6 +20,10 @@ import vtkVolume from '@kitware/vtk.js/Rendering/Core/Volume';
 import vtkVolumeMapper from '@kitware/vtk.js/Rendering/Core/VolumeMapper';
 import vtkXMLImageDataReader from '@kitware/vtk.js/IO/XML/XMLImageDataReader';
 import vtkFPSMonitor from '@kitware/vtk.js/Interaction/UI/FPSMonitor';
+import vtkRenderer from '@kitware/vtk.js/Rendering/Core/Renderer';
+import vtkRenderWindow from '@kitware/vtk.js/Rendering/Core/RenderWindow';
+
+
 
 // Force DataAccessHelper to have access to various data source
 import '@kitware/vtk.js/IO/Core/DataAccessHelper/HtmlDataAccessHelper';
@@ -61,17 +67,25 @@ function createViewer(rootContainer, fileContents, options) {
     ? options.background.split(',').map((s) => Number(s))
     : [0, 0, 0];
   const containerStyle = options.containerStyle;
-  const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
-    background,
-    rootContainer,
-    containerStyle,
-  });
-  const renderer = fullScreenRenderer.getRenderer();
-  const renderWindow = fullScreenRenderer.getRenderWindow();
-  renderWindow.getInteractor().setDesiredUpdateRate(30);
+
+  const renderWindow = vtkRenderWindow.newInstance();
+  const renderer = vtkRenderer.newInstance({ background: [0.2, 0.3, 0.4] });
+  renderWindow.addRenderer(renderer);
+
+  // const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
+  //   background,
+  //   rootContainer,
+  //   containerStyle,
+  // });
+  // const renderer = fullScreenRenderer.getRenderer();
+  // const renderWindow = fullScreenRenderer.getRenderWindow();
+
+  
+  //renderWindow.getInteractor().setDesiredUpdateRate(30);
 
   const vtiReader = vtkXMLImageDataReader.newInstance();
 
+  
   //take in a list of files and only display the one i want it to 
 
 
@@ -81,6 +95,7 @@ function createViewer(rootContainer, fileContents, options) {
 
   const source = vtiReader.getOutputData(0);
   const mapper = vtkVolumeMapper.newInstance();
+  
   const actor = vtkVolume.newInstance();
 
   const dataArray =
@@ -94,6 +109,20 @@ function createViewer(rootContainer, fileContents, options) {
   actor.setMapper(mapper);
   mapper.setInputData(source);
   renderer.addActor(actor);
+  renderer.resetCamera();
+
+
+  const openglRenderWindow = vtkOpenGLRenderWindow.newInstance();
+  renderWindow.addView(openglRenderWindow);
+
+  const container = document.createElement('div');
+  document.querySelector('body').appendChild(container);
+  openglRenderWindow.setContainer(container);
+
+
+  const { width, height } = container.getBoundingClientRect();
+openglRenderWindow.setSize(width, height);
+
 
   // Configuration
   const sampleDistance =
@@ -204,16 +233,6 @@ export function load(container, options) {
     console.log(options.file.size)
     console.log(options.file[0])
 
-  //   console.log(options.ext)
-  //   console.log("Hi")
-  //   console.log(options)
-    
-  //   if ( typeof options.open == "undefined" ){
-  //     console.log("is a folder")
-  //   }
-
-  //   options.forEach(element => console.log(element));
-
 
     if (options.ext === 'vti') {
       const reader = new FileReader();
@@ -288,27 +307,9 @@ export function initLocalFileLoader(container) {
     console.log("file length: " + files.length);
     for (var i = 0; i < files.length; ++i) {
       myLoop(files);
-      // console.log("file: " + i);
-      // //myContainer.removeChild(fileContainer);
-      // const ext = files[2].name.split('.').slice(-1)[0];
-      // const options = { file: files[2], ext, ...userParams };
-      // load(myContainer, options);
     }
   }
 
-  // function handleFile(e) {
-  //   preventDefaults(e);
-  //   const dataTransfer = e.dataTransfer;
-  //   const files = e.target.files || dataTransfer.files;
-  //   console.log("file length: " + files.length);
-  //   for (var i = 0; i < 1; ++i) {
-  //     console.log("file: " + i);
-  //     myContainer.removeChild(fileContainer);
-  //     const ext = files[2].name.split('.').slice(-1)[0];
-  //     const options = { file: files[2], ext, ...userParams };
-  //     load(myContainer, options);
-  //   }
-  // }
 
   fileInput.addEventListener('change', handleFile);
   fileContainer.addEventListener('drop', handleFile);
@@ -316,8 +317,7 @@ export function initLocalFileLoader(container) {
   fileContainer.addEventListener('dragover', preventDefaults);
 }
 
-// Look at URL an see if we should load a file
-// ?fileURL=https://data.kitware.com/api/v1/item/59cdbb588d777f31ac63de08/download
+
 if (userParams.fileURL) {
   const exampleContainer = document.querySelector('.content');
   const rootBody = document.querySelector('body');
