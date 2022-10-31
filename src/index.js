@@ -1,77 +1,60 @@
-/* eslint-disable import/prefer-default-export */
-/* eslint-disable import/no-extraneous-dependencies */
-
-import '@kitware/vtk.js/favicon';
-
-// Load the rendering pieces we want to use (for both WebGL and WebGPU)
-import '@kitware/vtk.js/Rendering/Profiles/Volume';
-
-import macro from '@kitware/vtk.js/macros';
-import HttpDataAccessHelper from '@kitware/vtk.js/IO/Core/DataAccessHelper/HttpDataAccessHelper';
-import vtkBoundingBox from '@kitware/vtk.js/Common/DataModel/BoundingBox';
-import vtkColorTransferFunction from '@kitware/vtk.js/Rendering/Core/ColorTransferFunction';
-import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow';
-import vtkPiecewiseFunction from '@kitware/vtk.js/Common/DataModel/PiecewiseFunction';
-import vtkVolumeController from '@kitware/vtk.js/Interaction/UI/VolumeController';
-import vtkURLExtract from '@kitware/vtk.js/Common/Core/URLExtract';
-import vtkVolume from '@kitware/vtk.js/Rendering/Core/Volume';
-import vtkVolumeMapper from '@kitware/vtk.js/Rendering/Core/VolumeMapper';
-import vtkXMLImageDataReader from '@kitware/vtk.js/IO/XML/XMLImageDataReader';
-import vtkFPSMonitor from '@kitware/vtk.js/Interaction/UI/FPSMonitor';
-
-// Force DataAccessHelper to have access to various data source
-import '@kitware/vtk.js/IO/Core/DataAccessHelper/HtmlDataAccessHelper';
-import '@kitware/vtk.js/IO/Core/DataAccessHelper/JSZipDataAccessHelper';
-
-import style from './VolumeViewer.module.css';
-// var glsl = require('glslify')
-let autoInit = true;
-const userParams = vtkURLExtract.extractURLParameters();
-const fpsMonitor = vtkFPSMonitor.newInstance();
+import vtkOpenGLRenderWindow from '@kitware/vtk.js/Rendering/OpenGL/RenderWindow';
+import vtkRenderWindow from '@kitware/vtk.js/Rendering/Core/RenderWindow';
+import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
+import vtkRenderer from '@kitware/vtk.js/Rendering/Core/Renderer';
+import vtkInteractorStyleTrackballCamera from '@kitware/vtk.js/Interaction/Style/InteractorStyleTrackballCamera';
 
 // ----------------------------------------------------------------------------
-// Add class to body if iOS device
+// Standard rendering code setup
 // ----------------------------------------------------------------------------
 
-const iOS = /iPad|iPhone|iPod/.test(window.navigator.platform);
-
-if (iOS) {
-  document.querySelector('body').classList.add('is-ios-device');
-}
+const renderWindow = vtkRenderWindow.newInstance();
+const renderer = vtkRenderer.newInstance({ background: [0.2, 0.3, 0.4] });
+renderWindow.addRenderer(renderer);
 
 // ----------------------------------------------------------------------------
-
-function emptyContainer(container) {
-  while (container.firstChild) {
-    container.removeChild(container.firstChild);
-  }
-}
-
+// Use OpenGL as the backend to view the all this
 // ----------------------------------------------------------------------------
 
-function preventDefaults(e) {
-  e.preventDefault();
-  e.stopPropagation();
-}
+const openglRenderWindow = vtkOpenGLRenderWindow.newInstance();
+renderWindow.addView(openglRenderWindow);
 
 // ----------------------------------------------------------------------------
+// Create a div section to put this into
+// ----------------------------------------------------------------------------
 
-function createViewer(rootContainer, fileContents, options) {
-  const background = options.background
-    ? options.background.split(',').map((s) => Number(s))
-    : [0, 0, 0];
-  const containerStyle = options.containerStyle;
-  const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
-    background,
-    rootContainer,
-    containerStyle,
-  });
-  const renderer = fullScreenRenderer.getRenderer();
-  const renderWindow = fullScreenRenderer.getRenderWindow();
-  renderWindow.getInteractor().setDesiredUpdateRate(30);
+const container = document.getElementById('#container');
+openglRenderWindow.setContainer(container);
 
+// ----------------------------------------------------------------------------
+// Capture size of the container and set it to the renderWindow
+// ----------------------------------------------------------------------------
+
+const { width, height } = container.getBoundingClientRect();
+openglRenderWindow.setSize(width, height);
+
+// ----------------------------------------------------------------------------
+// Setup an interactor to handle mouse events
+// ----------------------------------------------------------------------------
+
+const interactor = vtkRenderWindowInteractor.newInstance();
+interactor.setView(openglRenderWindow);
+interactor.initialize();
+interactor.bindEvents(container);
+
+// ----------------------------------------------------------------------------
+// Setup interactor style to use
+// ----------------------------------------------------------------------------
+
+interactor.setInteractorStyle(vtkInteractorStyleTrackballCamera.newInstance());
+
+// ----------------------------------------------------------------------------
+// Handle file input
+// ----------------------------------------------------------------------------
+
+export const load = (file) => {
   const vtiReader = vtkXMLImageDataReader.newInstance();
-  vtiReader.parseAsArrayBuffer(fileContents);
+  vtiReader.parseAsArrayBuffer(file);
 
   const source = vtiReader.getOutputData(0);
   const mapper = vtkVolumeMapper.newInstance();
@@ -135,28 +118,13 @@ function createViewer(rootContainer, fileContents, options) {
   actor.getProperty().setSpecularPower(8.0);
 
   // Control UI
-  const controllerWidget = vtkVolumeController.newInstance({
-    size: [400, 150],
-    rescaleColorMap: true,
-  });
-  const isBackgroundDark = background[0] + background[1] + background[2] < 1.5;
-  controllerWidget.setContainer(rootContainer);
-  controllerWidget.setupContent(renderWindow, actor, isBackgroundDark);
-
-  // setUpContent above sets the size to the container.
-  // We need to set the size after that.
-  // controllerWidget.setExpanded(false);
-
-  fullScreenRenderer.setResizeCallback(({ width, height }) => {
-    // 2px padding + 2x1px boder + 5px edge = 14
-    if (width > 414) {
-      controllerWidget.setSize(400, 150);
-    } else {
-      controllerWidget.setSize(width - 14, 150);
-    }
-    controllerWidget.render();
-    fpsMonitor.update();
-  });
+  // const controllerWidget = vtkVolumeController.newInstance({
+  //   size: [400, 150],
+  //   rescaleColorMap: true,
+  // });
+  // const isBackgroundDark = background[0] + background[1] + background[2] < 1.5;
+  // controllerWidget.setContainer(rootContainer);
+  // controllerWidget.setupContent(renderWindow, actor, isBackgroundDark);
 
   // First render
   renderer.resetCamera();
@@ -171,114 +139,28 @@ function createViewer(rootContainer, fileContents, options) {
     source,
     piecewiseFunction,
     fullScreenRenderer,
-  };
-
-  if (userParams.fps) {
-    const fpsElm = fpsMonitor.getFpsMonitorContainer();
-    fpsElm.classList.add(style.fpsMonitor);
-    fpsMonitor.setRenderWindow(renderWindow);
-    fpsMonitor.setContainer(rootContainer);
-    fpsMonitor.update();
   }
 }
 
 // ----------------------------------------------------------------------------
+// Handle file input
+// ----------------------------------------------------------------------------
+const fileInput = document.getElementById('input');
+fileInput.addEventListener('change', handleFile);
+fileContainer.addEventListener('drop', handleFile);
+fileContainer.addEventListener('click', (e) => fileInput.click());
+console.log("FILE UPLOAD SUCCESSFUL. TRYING TO HANDLEFILE()")
 
-export function load(container, options) {
-  autoInit = false;
-  emptyContainer(container);
+const handleFile = () => {
+  console.log("FILE UPLOAD SUCCESSFUL. TRYING TO HANDLEFILE()")
+  const fileList = fileInput.files;
+  for (var i = 0; i < fileList.length; ++i) {
+    const file = fileList[i];
 
-  if (options.file) {
-    if (options.ext === 'vti') {
-      const reader = new FileReader();
-      reader.onload = function onLoad(e) {
-        createViewer(container, reader.result, options);
-      };
-      reader.readAsArrayBuffer(options.file);
-    } else {
-      console.error('Unkown file...');
-    }
-  } else if (options.fileURL) {
-    const progressContainer = document.createElement('div');
-    progressContainer.setAttribute('class', style.progress);
-    container.appendChild(progressContainer);
-
-    const progressCallback = (progressEvent) => {
-      if (progressEvent.lengthComputable) {
-        const percent = Math.floor(
-          (100 * progressEvent.loaded) / progressEvent.total
-        );
-        progressContainer.innerHTML = `Loading ${percent}%`;
-      } else {
-        progressContainer.innerHTML = macro.formatBytesToProperUnit(
-          progressEvent.loaded
-        );
-      }
+    const reader = new FileReader();
+    reader.onload = () => {
+      load(reader.result);
     };
-
-    HttpDataAccessHelper.fetchBinary(options.fileURL, {
-      progressCallback,
-    }).then((binary) => {
-      container.removeChild(progressContainer);
-      createViewer(container, binary, options);
-    });
+    reader.readAsArrayBuffer(file);
   }
 }
-
-export function initLocalFileLoader(container) {
-  const exampleContainer = document.querySelector('.content');
-  const rootBody = document.querySelector('body');
-  const myContainer = container || exampleContainer || rootBody;
-
-  const fileContainer = document.createElement('div');
-  fileContainer.innerHTML = `<div class="${style.bigFileDrop}"/><input type="file" accept=".vti" style="display: none;"/>`;
-  myContainer.appendChild(fileContainer);
-
-  const fileInput = fileContainer.querySelector('input');
-
-  function handleFile(e) {
-    preventDefaults(e);
-    const dataTransfer = e.dataTransfer;
-    const files = e.target.files || dataTransfer.files;
-    if (files.length === 1) {
-      myContainer.removeChild(fileContainer);
-      const ext = files[0].name.split('.').slice(-1)[0];
-      const options = { file: files[0], ext, ...userParams };
-      load(myContainer, options);
-    }
-  }
-
-  fileInput.addEventListener('change', handleFile);
-  fileContainer.addEventListener('drop', handleFile);
-  fileContainer.addEventListener('click', (e) => fileInput.click());
-  fileContainer.addEventListener('dragover', preventDefaults);
-}
-
-// Look at URL an see if we should load a file
-// ?fileURL=https://data.kitware.com/api/v1/item/59cdbb588d777f31ac63de08/download
-if (userParams.fileURL) {
-  const exampleContainer = document.querySelector('.content');
-  const rootBody = document.querySelector('body');
-  const myContainer = exampleContainer || rootBody;
-  load(myContainer, userParams);
-}
-
-const viewerContainers = document.querySelectorAll('.vtkjs-volume-viewer');
-let nbViewers = viewerContainers.length;
-while (nbViewers--) {
-  const viewerContainer = viewerContainers[nbViewers];
-  const fileURL = viewerContainer.dataset.url;
-  const options = {
-    containerStyle: { height: '100%' },
-    ...userParams,
-    fileURL,
-  };
-  load(viewerContainer, options);
-}
-
-// Auto setup if no method get called within 100ms
-setTimeout(() => {
-  if (autoInit) {
-    initLocalFileLoader();
-  }
-}, 100);

@@ -1,4 +1,10 @@
-body {
+#container {
+  height: 80vh;
+  width: 80vw;
+}
+
+
+/* body {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -31,7 +37,7 @@ body {
   top: 50%;
   transform: translate(-50%, -50%);
   background-color: white;
-  /* background-image: url('Volumeviewer.png'); */
+  background-image: url('Volumeviewer.png'); 
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
@@ -101,4 +107,4 @@ select:focus {
   background-color: rgba(255, 255, 255, 0.5);
   border-radius: 5px;
   border: solid 1px gray;
-}
+} */
