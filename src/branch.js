@@ -1,17 +1,7 @@
-/* eslint-disable import/prefer-default-export */
-/* eslint-disable import/no-extraneous-dependencies */
-// Load the rendering pieces we want to use (for both WebGL and WebGPU)
-import '@kitware/vtk.js/Rendering/Profiles/Volume';
-import vtkBoundingBox from '@kitware/vtk.js/Common/DataModel/BoundingBox';
-import vtkColorTransferFunction from '@kitware/vtk.js/Rendering/Core/ColorTransferFunction';
-import vtkPiecewiseFunction from '@kitware/vtk.js/Common/DataModel/PiecewiseFunction';
-import vtkVolume from '@kitware/vtk.js/Rendering/Core/Volume';
-import vtkVolumeMapper from '@kitware/vtk.js/Rendering/Core/VolumeMapper';
-import vtkXMLImageDataReader from '@kitware/vtk.js/IO/XML/XMLImageDataReader';
-import vtkRenderer from '@kitware/vtk.js/Rendering/Core/Renderer';
-import vtkRenderWindow from '@kitware/vtk.js/Rendering/Core/RenderWindow';
 import vtkOpenGLRenderWindow from '@kitware/vtk.js/Rendering/OpenGL/RenderWindow';
+import vtkRenderWindow from '@kitware/vtk.js/Rendering/Core/RenderWindow';
 import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
+import vtkRenderer from '@kitware/vtk.js/Rendering/Core/Renderer';
 import vtkInteractorStyleTrackballCamera from '@kitware/vtk.js/Interaction/Style/InteractorStyleTrackballCamera';
 
 // ----------------------------------------------------------------------------
@@ -33,7 +23,7 @@ renderWindow.addView(openglRenderWindow);
 // Create a div section to put this into
 // ----------------------------------------------------------------------------
 
-const container = document.getElementById('#container');
+const container = document.getElementById('container');
 openglRenderWindow.setContainer(container);
 
 // ----------------------------------------------------------------------------
