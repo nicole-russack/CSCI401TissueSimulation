@@ -3,7 +3,8 @@
 
 import '@kitware/vtk.js/favicon';
 import vtkOpenGLRenderWindow from '@kitware/vtk.js/Rendering/OpenGL/RenderWindow';
-
+import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
+import vtkInteractorStyleTrackballCamera from '@kitware/vtk.js/Interaction/Style/InteractorStyleTrackballCamera';
 
 // Load the rendering pieces we want to use (for both WebGL and WebGPU)
 import '@kitware/vtk.js/Rendering/Profiles/Volume';
@@ -95,15 +96,18 @@ function createViewer(rootContainer, fileContents, options) {
 
   const source = vtiReader.getOutputData(0);
   const mapper = vtkVolumeMapper.newInstance();
-  
+  // mapper.update();
   const actor = vtkVolume.newInstance();
+  // actor.update();
 
   const dataArray =
     source.getPointData().getScalars() || source.getPointData().getArrays()[0];
   const dataRange = dataArray.getRange();
 
   const lookupTable = vtkColorTransferFunction.newInstance();
+  // lookupTable.updateRange();
   const piecewiseFunction = vtkPiecewiseFunction.newInstance();
+  // piecewiseFunction.updateRange();
 
   // Pipeline handling
   actor.setMapper(mapper);
@@ -113,7 +117,9 @@ function createViewer(rootContainer, fileContents, options) {
 
 
   const openglRenderWindow = vtkOpenGLRenderWindow.newInstance();
+  // openglRenderWindow.update();
   renderWindow.addView(openglRenderWindow);
+
 
   const container = document.createElement('div');
   document.querySelector('body').appendChild(container);
@@ -123,6 +129,12 @@ function createViewer(rootContainer, fileContents, options) {
   const { width, height } = container.getBoundingClientRect();
 openglRenderWindow.setSize(width, height);
 
+const interactor = vtkRenderWindowInteractor.newInstance();
+interactor.setView(openglRenderWindow);
+interactor.initialize();
+interactor.bindEvents(container);
+
+interactor.setInteractorStyle(vtkInteractorStyleTrackballCamera.newInstance());
 
   // Configuration
   const sampleDistance =
@@ -182,19 +194,20 @@ openglRenderWindow.setSize(width, height);
   // We need to set the size after that.
   // controllerWidget.setExpanded(false);
 
-  fullScreenRenderer.setResizeCallback(({ width, height }) => {
-    // 2px padding + 2x1px boder + 5px edge = 14
-    if (width > 414) {
-      controllerWidget.setSize(400, 150);
-    } else {
-      controllerWidget.setSize(width - 14, 150);
-    }
-    controllerWidget.render();
-    fpsMonitor.update();
-  });
+  // fullScreenRenderer.setResizeCallback(({ width, height }) => {
+  //   // 2px padding + 2x1px boder + 5px edge = 14
+  //   if (width > 414) {
+  //     controllerWidget.setSize(400, 150);
+  //   } else {
+  //     controllerWidget.setSize(width - 14, 150);
+  //   }
+  //   controllerWidget.render();
+  //   fpsMonitor.update();
+  // });
 
   // First render
   renderer.resetCamera();
+  renderWindow.ren
   renderWindow.render();
 
   global.pipeline = {
@@ -205,7 +218,7 @@ openglRenderWindow.setSize(width, height);
     mapper,
     source,
     piecewiseFunction,
-    fullScreenRenderer,
+    // fullScreenRenderer,
   };
 
   if (userParams.fps) {
