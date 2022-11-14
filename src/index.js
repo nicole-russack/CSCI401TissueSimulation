@@ -62,8 +62,9 @@ function preventDefaults(e) {
 }
 
 // ----------------------------------------------------------------------------
-
+var index = 1;
 function createViewer(rootContainer, fileContents, options) {
+  
   const background = options.background
     ? options.background.split(',').map((s) => Number(s))
     : [0, 0, 0];
@@ -72,17 +73,6 @@ function createViewer(rootContainer, fileContents, options) {
   const renderWindow = vtkRenderWindow.newInstance();
   const renderer = vtkRenderer.newInstance({ background: [0.2, 0.3, 0.4] });
   renderWindow.addRenderer(renderer);
-
-  // const fullScreenRenderer = vtkFullScreenRenderWindow.newInstance({
-  //   background,
-  //   rootContainer,
-  //   containerStyle,
-  // });
-  // const renderer = fullScreenRenderer.getRenderer();
-  // const renderWindow = fullScreenRenderer.getRenderWindow();
-
-  
-  //renderWindow.getInteractor().setDesiredUpdateRate(30);
 
   const vtiReader = vtkXMLImageDataReader.newInstance();
 
@@ -117,17 +107,27 @@ function createViewer(rootContainer, fileContents, options) {
 
 
   const openglRenderWindow = vtkOpenGLRenderWindow.newInstance();
-  // openglRenderWindow.update();
+
+  var container;
   renderWindow.addView(openglRenderWindow);
+  if(index == 1){
+    container = document.createElement('div');
+    container.id = "first_div";
+    document.querySelector('body').appendChild(container);
 
-
-  const container = document.createElement('div');
-  document.querySelector('body').appendChild(container);
+    index+=1;
+  }
+  else{
+    container = document.getElementById("first_div");
+    console.log("id: "+ container.id)
+    
+  }
+  emptyContainer(container);
   openglRenderWindow.setContainer(container);
-
-
   const { width, height } = container.getBoundingClientRect();
-openglRenderWindow.setSize(width, height);
+  openglRenderWindow.setSize(width, height);
+
+
 
 const interactor = vtkRenderWindowInteractor.newInstance();
 interactor.setView(openglRenderWindow);
@@ -148,7 +148,6 @@ interactor.setInteractorStyle(vtkInteractorStyleTrackballCamera.newInstance());
   mapper.setSampleDistance(sampleDistance);
   actor.getProperty().setRGBTransferFunction(0, lookupTable);
   actor.getProperty().setScalarOpacity(0, piecewiseFunction);
-  // actor.getProperty().setInterpolationTypeToFastLinear();
   actor.getProperty().setInterpolationTypeToLinear();
 
   // For better looking volume rendering
@@ -192,18 +191,6 @@ interactor.setInteractorStyle(vtkInteractorStyleTrackballCamera.newInstance());
 
   // setUpContent above sets the size to the container.
   // We need to set the size after that.
-  // controllerWidget.setExpanded(false);
-
-  // fullScreenRenderer.setResizeCallback(({ width, height }) => {
-  //   // 2px padding + 2x1px boder + 5px edge = 14
-  //   if (width > 414) {
-  //     controllerWidget.setSize(400, 150);
-  //   } else {
-  //     controllerWidget.setSize(width - 14, 150);
-  //   }
-  //   controllerWidget.render();
-  //   fpsMonitor.update();
-  // });
 
   // First render
   renderer.resetCamera();
@@ -218,7 +205,6 @@ interactor.setInteractorStyle(vtkInteractorStyleTrackballCamera.newInstance());
     mapper,
     source,
     piecewiseFunction,
-    // fullScreenRenderer,
   };
 
   if (userParams.fps) {
@@ -237,15 +223,7 @@ export function load(container, options) {
   emptyContainer(container);
   
 
-
-
-
   if (options.file) {
-
-    console.log(options)
-    console.log(options.file.size)
-    console.log(options.file[0])
-
 
     if (options.ext === 'vti') {
       const reader = new FileReader();
@@ -257,18 +235,21 @@ export function load(container, options) {
       console.error('Unkown file...');
     }
   } else if (options.fileURL) {
-    const progressContainer = document.createElement('div');
-    progressContainer.setAttribute('class', style.progress);
-    container.appendChild(progressContainer);
+    // const progressContainer = document.createElement('div');
+    // progressContainer.setAttribute('class', style.progress);
+    container.setAttribute('class', style.progress); //added
+    // container.appendChild(progressContainer);
 
     const progressCallback = (progressEvent) => {
       if (progressEvent.lengthComputable) {
         const percent = Math.floor(
           (100 * progressEvent.loaded) / progressEvent.total
         );
-        progressContainer.innerHTML = `Loading ${percent}%`;
+        // progressContainer.innerHTML = `Loading ${percent}%`;
+        container.innerHTML = `Loading ${percent}%`; //added
       } else {
-        progressContainer.innerHTML = macro.formatBytesToProperUnit(
+        // progressContainer.innerHTML = macro.formatBytesToProperUnit(
+        container.innerHTML = macro.formatBytesToProperUnit(
           progressEvent.loaded
         );
       }
@@ -277,7 +258,8 @@ export function load(container, options) {
     HttpDataAccessHelper.fetchBinary(options.fileURL, {
       progressCallback,
     }).then((binary) => {
-      container.removeChild(progressContainer);
+      
+      // container.removeChild(progressContainer);
       createViewer(container, binary, options);
     });
   }
@@ -287,6 +269,7 @@ export function initLocalFileLoader(container) {
   const exampleContainer = document.querySelector('.content');
   const rootBody = document.querySelector('body');
   const myContainer = container || exampleContainer || rootBody;
+
 
   const fileContainer = document.createElement('div');
   fileContainer.innerHTML = `<div class="${style.bigFileDrop}"/><input type="file" accept=".vti" style="display: none;"/>`;
@@ -304,7 +287,8 @@ export function initLocalFileLoader(container) {
       if (i < files.length) {           //  if the counter < 10, call the loop function
         const ext = files[i].name.split('.').slice(-1)[0];
         const options = { file: files[i], ext, ...userParams };
-        load(myContainer, options);
+        console.log("loaded" + i)
+        load(rootBody, options);
         myLoop(files);             //  ..  again which will trigger another 
       }                       //  ..  setTimeout()
     }, 1000)
@@ -354,6 +338,8 @@ while (nbViewers--) {
 // Auto setup if no method get called within 100ms
 setTimeout(() => {
   if (autoInit) {
+    console.log("init loaded");
     initLocalFileLoader();
+    
   }
 }, 100);
