@@ -114,6 +114,29 @@ function createViewer(rootContainer, fileContents, options) {
     container = document.createElement('div');
     container.id = "first_div";
     document.querySelector('body').appendChild(container);
+    const playPauseButton = document.createElement("button");
+      playPauseButton.id = "playPauseButton";
+      playPauseButton.innerHTML = "Play/Pause";
+      playPauseButton.type = "button";
+      playPauseButton.name = "playPauseButton";
+      playPauseButton.style = "position: relative; color: green;";
+      document.body.appendChild(playPauseButton);
+    
+      const measureButton = document.createElement("button");
+      measureButton.innerHTML = "Measure";
+      measureButton.type = "button";
+      measureButton.id = "measureButton";
+      measureButton.name = "measureButton";
+      measureButton.style = "position: relative";
+      document.body.appendChild(measureButton);
+    
+    
+      const uploadButton = document.createElement("button");
+      uploadButton.innerHTML = "Upload";
+      uploadButton.type = "button";
+      uploadButton.name = "uploadButton";
+      uploadButton.style = "position: relative";
+      document.body.appendChild(uploadButton);
 
     index+=1;
   }
@@ -123,10 +146,10 @@ function createViewer(rootContainer, fileContents, options) {
     
   }
   emptyContainer(container);
+
   openglRenderWindow.setContainer(container);
   const { width, height } = container.getBoundingClientRect();
   openglRenderWindow.setSize(width, height);
-
 
 
 const interactor = vtkRenderWindowInteractor.newInstance();
@@ -266,6 +289,7 @@ export function load(container, options) {
 }
 
 export function initLocalFileLoader(container) {
+
   const exampleContainer = document.querySelector('.content');
   const rootBody = document.querySelector('body');
   const myContainer = container || exampleContainer || rootBody;
@@ -284,6 +308,7 @@ export function initLocalFileLoader(container) {
   function myLoop(files) {         //  create a loop function
     setTimeout(function() {   //  call a 3s setTimeout when the loop is called
       i++;                    //  increment the counter
+
       if (i < files.length) {           //  if the counter < 10, call the loop function
         const ext = files[i].name.split('.').slice(-1)[0];
         const options = { file: files[i], ext, ...userParams };
@@ -324,7 +349,9 @@ if (userParams.fileURL) {
 
 const viewerContainers = document.querySelectorAll('.vtkjs-volume-viewer');
 let nbViewers = viewerContainers.length;
+console.log("nbviewers: " + nbViewers);
 while (nbViewers--) {
+  
   const viewerContainer = viewerContainers[nbViewers];
   const fileURL = viewerContainer.dataset.url;
   const options = {
