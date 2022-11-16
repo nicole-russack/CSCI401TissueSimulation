@@ -42,6 +42,9 @@ const fpsMonitor = vtkFPSMonitor.newInstance();
 
 const iOS = /iPad|iPhone|iPod/.test(window.navigator.platform);
 
+var numFiles = 0;
+
+
 if (iOS) {
   document.querySelector('body').classList.add('is-ios-device');
 }
@@ -81,7 +84,8 @@ function createViewer(rootContainer, fileContents, options) {
 
 
 
-
+  const filelength = fileContents.length;
+  console.log("fileeeee: "+ filelength);
   vtiReader.parseAsArrayBuffer(fileContents);
 
   const source = vtiReader.getOutputData(0);
@@ -137,6 +141,23 @@ function createViewer(rootContainer, fileContents, options) {
       uploadButton.name = "uploadButton";
       uploadButton.style = "position: relative";
       document.body.appendChild(uploadButton);
+
+      const slideBar = document.createElement("slidecontainer");
+      console.log("num files: "+ numFiles);
+      slideBar.innerHTML = `<div class="slidecontainer"/><input type="range" min="1" max="${numFiles}" class="slider" id="myRange">`;
+      document.body.appendChild(slideBar);
+
+
+      var slider = document.getElementById("myRange");
+      const output = document.createElement("demo");
+      output.innerHTML = slideBar.value;
+      output.innerHTML = `<p>Value: <span id="demo"></span></p>`;
+      slider.oninput = function() {
+        output.innerHTML = this.value;
+      }
+      slider.style = "position: relative; clear: both";
+      document.body.appendChild(output);
+      
 
     index+=1;
   }
@@ -327,6 +348,7 @@ export function initLocalFileLoader(container) {
     const dataTransfer = e.dataTransfer;
     const files = e.target.files || dataTransfer.files;
     console.log("file length: " + files.length);
+    numFiles = files.length;
     for (var i = 0; i < files.length; ++i) {
       myLoop(files);
     }
