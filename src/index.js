@@ -45,6 +45,8 @@ const iOS = /iPad|iPhone|iPod/.test(window.navigator.platform);
 var numFiles = 0;
 
 
+document.body.style.backgroundColor = "black";
+
 if (iOS) {
   document.querySelector('body').classList.add('is-ios-device');
 }
@@ -52,12 +54,22 @@ if (iOS) {
 // ----------------------------------------------------------------------------
 
 function emptyContainer(container) {
-  while (container.firstChild) {
+  while (container != undefined && container.firstChild && container.firstChild.id != "first_div") {
+    console.log("this is the containers child " + container.firstChild)
+    console.log("this is the containers child id " + container.firstChild.id)
     container.removeChild(container.firstChild);
+
+    // if(container.firstChild.id != "first_div"){
+    //   container.removeChild(container.firstChild);
+    // }
+    
   }
+  //console.log("this is the last container " + container.firstChild.id)
+
 }
 
 // ----------------------------------------------------------------------------
+var index = 1;
 
 function preventDefaults(e) {
   e.preventDefault();
@@ -65,7 +77,26 @@ function preventDefaults(e) {
 }
 
 // ----------------------------------------------------------------------------
-var index = 1;
+var play = true;
+var container;
+var slideBar;
+var files;
+var slider;
+var output;
+var sliderValue = 0;
+
+function playfunc(){
+  i = 0;
+  console.log("play value ", play);
+  myLoop(files);
+}
+
+function slidefunction(){
+  console.log("slid ")
+  options = { file: files[sliderValue - 1], ext, ...userParams };
+  load(rootBody, options);
+}
+
 function createViewer(rootContainer, fileContents, options) {
   
   const background = options.background
@@ -78,10 +109,6 @@ function createViewer(rootContainer, fileContents, options) {
   renderWindow.addRenderer(renderer);
 
   const vtiReader = vtkXMLImageDataReader.newInstance();
-
-  
-  //take in a list of files and only display the one i want it to 
-
 
 
   const filelength = fileContents.length;
@@ -111,57 +138,68 @@ function createViewer(rootContainer, fileContents, options) {
 
 
   const openglRenderWindow = vtkOpenGLRenderWindow.newInstance();
-
-  var container;
+  const playPauseButton = document.createElement("button");
+  
   renderWindow.addView(openglRenderWindow);
   if(index == 1){
+    console.log("index is 1")
     container = document.createElement('div');
     container.id = "first_div";
-    document.querySelector('body').appendChild(container);
-    const playPauseButton = document.createElement("button");
-      playPauseButton.id = "playPauseButton";
-      playPauseButton.innerHTML = "Play/Pause";
-      playPauseButton.type = "button";
-      playPauseButton.name = "playPauseButton";
-      playPauseButton.style = "position: relative; color: green;";
-      document.body.appendChild(playPauseButton);
-    
-      const measureButton = document.createElement("button");
-      measureButton.innerHTML = "Measure";
-      measureButton.type = "button";
-      measureButton.id = "measureButton";
-      measureButton.name = "measureButton";
-      measureButton.style = "position: relative";
-      document.body.appendChild(measureButton);
-    
-    
-      const uploadButton = document.createElement("button");
-      uploadButton.innerHTML = "Upload";
-      uploadButton.type = "button";
-      uploadButton.name = "uploadButton";
-      uploadButton.style = "position: relative";
-      document.body.appendChild(uploadButton);
+    document.body.appendChild(container);
+    //document.querySelector('body').appendChild(container);
+    playPauseButton.id = "playPauseButton";
+    playPauseButton.innerHTML = "Play";
+    playPauseButton.type = "button";
+    playPauseButton.name = "playPauseButton";
+    playPauseButton.style = "position: relative; color: green;";
 
-      const slideBar = document.createElement("slidecontainer");
-      console.log("num files: "+ numFiles);
-      slideBar.innerHTML = `<div class="slidecontainer"/><input type="range" min="1" max="${numFiles}" class="slider" id="myRange">`;
-      document.body.appendChild(slideBar);
+    //playPauseButton.onclick = function(){"button clicked"};
+
+    playPauseButton.addEventListener('click', playfunc);
+
+    console.log("in create thing")
+    document.body.appendChild(playPauseButton);
+    
+    const measureButton = document.createElement("button");
+    measureButton.innerHTML = "Measure";
+    measureButton.type = "button";
+    measureButton.id = "measureButton";
+    measureButton.name = "measureButton";
+    measureButton.style = "position: relative";
+    document.body.appendChild(measureButton);
+    
+    
+    const uploadButton = document.createElement("button");
+    uploadButton.innerHTML = "Upload";
+    uploadButton.type = "button";
+    uploadButton.name = "uploadButton";
+    uploadButton.style = "position: relative";
+    document.body.appendChild(uploadButton);
+
+    slideBar = document.createElement("slidecontainer");
+    console.log("num files: "+ numFiles);
+    slideBar.innerHTML = `<div class="slidecontainer"/><input type="range" min="1" max="${numFiles}" class="slider" id="myRange">`;
+    slideBar.addEventListener('click', slidefunction);
+
+    document.body.appendChild(slideBar);
 
 
-      var slider = document.getElementById("myRange");
-      const output = document.createElement("demo");
-      output.innerHTML = slideBar.value;
-      output.innerHTML = `<p>Value: <span id="demo"></span></p>`;
-      slider.oninput = function() {
-        output.innerHTML = this.value;
-      }
-      slider.style = "position: relative; clear: both";
-      document.body.appendChild(output);
+    slider = document.getElementById("myRange");
+    output = document.createElement("demo");
+    output.innerHTML = "hi";
+    output.innerHTML = `<p>Value: <span id="demo"></span></p>`;
+    slider.oninput = function() {
+      output.innerHTML = this.value;
+      sliderValue = this.value;
+      console.log(sliderValue)
+    }
+    slider.style = "position: relative; clear: both";
+    document.body.appendChild(output);
       
-
     index+=1;
   }
   else{
+    console.log("index is not 1")
     container = document.getElementById("first_div");
     console.log("id: "+ container.id)
     
@@ -227,7 +265,7 @@ interactor.setInteractorStyle(vtkInteractorStyleTrackballCamera.newInstance());
   // Control UI
   const controllerWidget = vtkVolumeController.newInstance({
     size: [400, 150],
-    rescaleColorMap: true,
+    rescaleColorMap: false,
   });
   const isBackgroundDark = background[0] + background[1] + background[2] < 1.5;
   controllerWidget.setContainer(rootContainer);
@@ -261,7 +299,7 @@ interactor.setInteractorStyle(vtkInteractorStyleTrackballCamera.newInstance());
 }
 
 // ----------------------------------------------------------------------------
-
+var rootBody;
 export function load(container, options) {
   autoInit = false;
   emptyContainer(container);
@@ -312,9 +350,8 @@ export function load(container, options) {
 export function initLocalFileLoader(container) {
 
   const exampleContainer = document.querySelector('.content');
-  const rootBody = document.querySelector('body');
+  rootBody = document.querySelector('body');
   const myContainer = container || exampleContainer || rootBody;
-
 
   const fileContainer = document.createElement('div');
   fileContainer.innerHTML = `<div class="${style.bigFileDrop}"/><input type="file" accept=".vti" style="display: none;"/>`;
@@ -322,38 +359,20 @@ export function initLocalFileLoader(container) {
 
   const fileInput = fileContainer.querySelector('input');
 
-  console.log("file input", fileInput)
-
-  var i = -1;                  //  set your counter to 1
-
-  function myLoop(files) {         //  create a loop function
-    setTimeout(function() {   //  call a 3s setTimeout when the loop is called
-      i++;                    //  increment the counter
-
-      if (i < files.length) {           //  if the counter < 10, call the loop function
-        const ext = files[i].name.split('.').slice(-1)[0];
-        const options = { file: files[i], ext, ...userParams };
-        console.log("loaded" + i)
-        load(rootBody, options);
-        myLoop(files);             //  ..  again which will trigger another 
-      }                       //  ..  setTimeout()
-    }, 1000)
-  }
+  console.log("file input", fileInput)    
   
-                    //  start the loop
-  
+
+
 
   function handleFile(e) {
     preventDefaults(e);
     const dataTransfer = e.dataTransfer;
-    const files = e.target.files || dataTransfer.files;
+    files = e.target.files || dataTransfer.files;
     console.log("file length: " + files.length);
     numFiles = files.length;
-    for (var i = 0; i < files.length; ++i) {
-      myLoop(files);
-    }
+    myLoop(files);
+    
   }
-
 
   fileInput.addEventListener('change', handleFile);
   fileContainer.addEventListener('drop', handleFile);
@@ -364,7 +383,7 @@ export function initLocalFileLoader(container) {
 
 if (userParams.fileURL) {
   const exampleContainer = document.querySelector('.content');
-  const rootBody = document.querySelector('body');
+  rootBody = document.querySelector('body');
   const myContainer = exampleContainer || rootBody;
   load(myContainer, userParams);
 }
@@ -389,6 +408,28 @@ setTimeout(() => {
   if (autoInit) {
     console.log("init loaded");
     initLocalFileLoader();
-    
   }
 }, 100);
+
+
+
+var i = -1;
+var ext;
+var options;
+
+
+function myLoop(files) {       
+  setTimeout(function() {   
+    
+    i++;
+    console.log("test ", i)                   
+    if (i < files.length) {          
+      ext = files[i].name.split('.').slice(-1)[0];
+      console.log(files[i])
+      options = { file: files[i], ext, ...userParams };
+
+      load(rootBody, options);
+      myLoop(files);             
+    }                      
+  }, 100)
+}  
