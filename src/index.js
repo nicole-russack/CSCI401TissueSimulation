@@ -44,7 +44,6 @@ const iOS = /iPad|iPhone|iPod/.test(window.navigator.platform);
 
 var numFiles = 0;
 
-
 document.body.style.backgroundColor = "black";
 
 if (iOS) {
@@ -169,12 +168,17 @@ function createViewer(rootContainer, fileContents, options) {
     document.body.appendChild(measureButton);
     
     
-    const uploadButton = document.createElement("button");
+    const uploadButton = document.createElement("input");
     uploadButton.innerHTML = "Upload";
     uploadButton.type = "button";
     uploadButton.name = "uploadButton";
     uploadButton.style = "position: relative";
+    uploadButton.setAttribute("type", "file");
+    uploadButton.setAttribute("multiple", "");
+    //uploadButton.addEventListener('change', handleFile);
     document.body.appendChild(uploadButton);
+
+    uploadButton.addEventListener('change', handleFile);
 
     slideBar = document.createElement("slidecontainer");
     console.log("num files: "+ numFiles);
@@ -183,14 +187,14 @@ function createViewer(rootContainer, fileContents, options) {
 
     document.body.appendChild(slideBar);
 
-
     slider = document.getElementById("myRange");
     output = document.createElement("demo");
-    output.innerHTML = "hi";
-    output.innerHTML = `<p>Value: <span id="demo"></span></p>`;
+    output.innerHTML =  numFiles;
     slider.oninput = function() {
       output.innerHTML = this.value;
+
       sliderValue = this.value;
+      output.style.color = "white";
       console.log(sliderValue)
     }
     slider.style = "position: relative; clear: both";
@@ -202,6 +206,7 @@ function createViewer(rootContainer, fileContents, options) {
     console.log("index is not 1")
     container = document.getElementById("first_div");
     console.log("id: "+ container.id)
+
     
   }
   emptyContainer(container);
@@ -265,7 +270,7 @@ interactor.setInteractorStyle(vtkInteractorStyleTrackballCamera.newInstance());
   // Control UI
   const controllerWidget = vtkVolumeController.newInstance({
     size: [400, 150],
-    rescaleColorMap: false,
+    rescaleColorMap: true,
   });
   const isBackgroundDark = background[0] + background[1] + background[2] < 1.5;
   controllerWidget.setContainer(rootContainer);
@@ -303,10 +308,8 @@ var rootBody;
 export function load(container, options) {
   autoInit = false;
   emptyContainer(container);
-  
 
   if (options.file) {
-
     if (options.ext === 'vti') {
       const reader = new FileReader();
       reader.onload = function onLoad(e) {
@@ -358,26 +361,27 @@ export function initLocalFileLoader(container) {
   myContainer.appendChild(fileContainer);
 
   const fileInput = fileContainer.querySelector('input');
-
+  fileInput.setAttribute("multiple", "");
   console.log("file input", fileInput)    
-  
-
-
-
-  function handleFile(e) {
-    preventDefaults(e);
-    const dataTransfer = e.dataTransfer;
-    files = e.target.files || dataTransfer.files;
-    console.log("file length: " + files.length);
-    numFiles = files.length;
-    myLoop(files);
-    
-  }
 
   fileInput.addEventListener('change', handleFile);
   fileContainer.addEventListener('drop', handleFile);
   fileContainer.addEventListener('click', (e) => fileInput.click());
   fileContainer.addEventListener('dragover', preventDefaults);
+}
+
+function handleFile(e) {
+  preventDefaults(e);
+  const dataTransfer = e.dataTransfer;
+  files = e.target.files || dataTransfer.files;
+  console.log("file length: " + files.length);
+  numFiles = files.length;
+  console.log("numFiles: " + numFiles);
+  myLoop(files);
+  slideBar.innerHTML = `<div class="slidecontainer"/><input type="range" min="1" max="${numFiles}" class="slider" id="myRange">`;
+  output.innerHTML =  this.value;
+  
+  
 }
 
 
@@ -431,5 +435,5 @@ function myLoop(files) {
       load(rootBody, options);
       myLoop(files);             
     }                      
-  }, 100)
+  }, 1000)
 }  
